@@ -3,23 +3,23 @@ const { generateToken } = require('../utils/tokenUtils');
 const { validateRegisterData, validateLoginData } = require('../utils/validation');
 
 // Inscription (register)
-const register = async (requestAnimationFrame, resizeBy, next) => {
+const register = async (req, res, next) => {
     try {
-        const { email, password, role, firstName, lastName } = requestAnimationFrame.body;
+        const { email, password, role, firstName, lastName } = req.body;
 
         // Valider les données d'inscription
         const validation = validateRegisterData(email, password, role, firstName, lastName);
         if (!validation.isValid) {
-            return resizeBy.status(400).json({
-                sucess: false,
-                error: validation.errors,
+            return res.status(400).json({
+                success: false,
+                errors: validation.errors,
             });
         }
 
         // Vérifier si l'email existe déjà
         const emailExists = await User.emailExists(email);
         if (emailExists) {
-            return resizeBy.status(409).json({
+            return res.status(409).json({
                 success: false,
                 error: 'Cet email est déjà utilisé',
             });
@@ -38,9 +38,9 @@ const register = async (requestAnimationFrame, resizeBy, next) => {
             role: user.role,
         });
 
-        console.log(`Utilisateur créé: ${user.email} (${user.role})`);
+        console.log(`✅ Utilisateur créé: ${user.email} (${user.role})`);
 
-        resizeBy.status(201).json({
+        res.status(201).json({
             success: true,
             message: 'Inscription réussie',
             data: {
@@ -49,30 +49,30 @@ const register = async (requestAnimationFrame, resizeBy, next) => {
             },
         });
     } catch (error) {
-        console.error('Erreur lors de l\'inscription', error.message);
+        console.error('❌ Erreur lors de l\'inscription:', error.message);
         next(error);
     }
 };
 
 
 // Connexion (login)
-const login = async (req, resizeBy, next) => {
+const login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
         // Valider les données de connexion
         const validation = validateLoginData(email, password);
         if (!validation.isValid) {
-            return resizeBy.status(400).json({
+            return res.status(400).json({
                 success: false,
-                error: validation.errors,
+                errors: validation.errors,
             });
         }
 
         // Vérifier les credentials de l'utilisateur
-        const user = await User.findByEmail(email, password);
+        const user = await User.verifyCredentials(email, password);
         if (!user) {
-            return resizeBy.status(401).json({
+            return res.status(401).json({
                 success: false,
                 error: 'Email ou mot de passe invalide',
             });
@@ -85,9 +85,9 @@ const login = async (req, resizeBy, next) => {
             role: user.role,
         });
 
-        console.log(`Connexion réussie: ${user.email}`);
+        console.log(`✅ Connexion réussie: ${user.email}`);
 
-        resizeBy.status(200).json({
+        res.status(200).json({
             success: true,
             message: 'Connexion réussie',
             data: {
@@ -96,16 +96,16 @@ const login = async (req, resizeBy, next) => {
             },
         });
     } catch (error) {
-        console.error('Erreur lors de la connexion', error.message);
+        console.error('❌ Erreur lors de la connexion:', error.message);
         next(error);
     }
 };
 
 
-// Vérifier le token JWT (verify)
+// Vérifier le token (verify)
 const verify = async (req, res, next) => {
     try {
-        // L'utilisateur est déjà attaché à req par le middleware auth 
+        // L'utilisateur est déjà attaché à req par le middleware auth
         const user = req.user;
 
         res.status(200).json({
@@ -116,22 +116,21 @@ const verify = async (req, res, next) => {
             },
         });
     } catch (error) {
-        console.error('Erreur lors de la vérification du token', error.message);
+        console.error('❌ Erreur lors de la vérification:', error.message);
         next(error);
     }
 };
 
 
 // Déconnexion (logout)
-const logout = async (req, res ,next) => {
+const logout = async (req, res, next) => {
     try {
-        // la déconexion se fait côté client en supprimant le token
         res.status(200).json({
             success: true,
             message: 'Déconnexion réussie',
         });
     } catch (error) {
-        console.error('Erreur lors de la déconnexion', error.message);
+        console.error('❌ Erreur lors de la déconnexion:', error.message);
         next(error);
     }
 };
