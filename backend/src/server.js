@@ -3,7 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const { errorHandler, logger } = require('./middleware');
-const { authRoutes, availabilityRoutes } = require('./routes');
+const { authRoutes, availabilityRoutes, publicRoutes } = require('./routes');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -28,6 +28,7 @@ app.get('/api/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/coach/availabilities', availabilityRoutes);
+app.use('/api/public', publicRoutes);
 
 // 404 handler
 app.use((req, res) => {
