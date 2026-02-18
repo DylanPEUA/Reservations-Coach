@@ -1,11 +1,25 @@
 const Availability = require('../models/Availability');
-const { verifyPassword } = require('../utils/hashPassword');
+const pool = require('../database');
 
 // Créer une disponibilité
 const createAvailability = async (req, res, next) => {
   try {
     const { dayOfWeek, startTime, endTime, durationMinutes } = req.body;
-    const coachId = req.user.id;
+
+    // Récupérer le coach_id à partir du user_id
+    const [coachResult] = await pool.query(
+      'SELECT id FROM coaches WHERE user_id = ?',
+      [req.user.id]
+    );
+
+    if (coachResult.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Profil coach non trouvé pour cet utilisateur',
+      });
+    }
+
+    const coachId = coachResult[0].id;
 
     // Valider les données
     if (dayOfWeek === undefined || !startTime || !endTime || !durationMinutes) {
@@ -48,7 +62,7 @@ const createAvailability = async (req, res, next) => {
     // Créer la disponibilité
     const availabilityId = await Availability.create(coachId, dayOfWeek, startTime, endTime, durationMinutes);
 
-    console.log(`Disponibilité créée: ID ${availabilityId} pour le coach ${coachId}`);
+    console.log(` Disponibilité créée: ID ${availabilityId} pour le coach ${coachId}`);
 
     res.status(201).json({
       success: true,
@@ -63,7 +77,7 @@ const createAvailability = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.error('Erreur lors de la création de la disponibilité:', error.message);
+    console.error(' Erreur lors de la création de la disponibilité:', error.message);
     next(error);
   }
 };
@@ -71,7 +85,20 @@ const createAvailability = async (req, res, next) => {
 // Récupérer mes disponibilités (pour le coach)
 const getMyAvailabilities = async (req, res, next) => {
   try {
-    const coachId = req.user.id;
+    // Récupérer le coach_id à partir du user_id
+    const [coachResult] = await pool.query(
+      'SELECT id FROM coaches WHERE user_id = ?',
+      [req.user.id]
+    );
+
+    if (coachResult.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Profil coach non trouvé pour cet utilisateur',
+      });
+    }
+
+    const coachId = coachResult[0].id;
 
     const availabilities = await Availability.findByCoachId(coachId);
 
@@ -83,7 +110,7 @@ const getMyAvailabilities = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.error('Erreur lors de la récupération des disponibilités:', error.message);
+    console.error(' Erreur lors de la récupération des disponibilités:', error.message);
     next(error);
   }
 };
@@ -92,7 +119,21 @@ const getMyAvailabilities = async (req, res, next) => {
 const getAvailabilityById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const coachId = req.user.id;
+
+    // Récupérer le coach_id à partir du user_id
+    const [coachResult] = await pool.query(
+      'SELECT id FROM coaches WHERE user_id = ?',
+      [req.user.id]
+    );
+
+    if (coachResult.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Profil coach non trouvé pour cet utilisateur',
+      });
+    }
+
+    const coachId = coachResult[0].id;
 
     const availability = await Availability.findById(id);
 
@@ -119,7 +160,7 @@ const getAvailabilityById = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.error('Erreur lors de la récupération de la disponibilité:', error.message);
+    console.error(' Erreur lors de la récupération de la disponibilité:', error.message);
     next(error);
   }
 };
@@ -129,7 +170,21 @@ const updateAvailability = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { dayOfWeek, startTime, endTime, durationMinutes } = req.body;
-    const coachId = req.user.id;
+
+    // Récupérer le coach_id à partir du user_id
+    const [coachResult] = await pool.query(
+      'SELECT id FROM coaches WHERE user_id = ?',
+      [req.user.id]
+    );
+
+    if (coachResult.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Profil coach non trouvé pour cet utilisateur',
+      });
+    }
+
+    const coachId = coachResult[0].id;
 
     const availability = await Availability.findById(id);
 
@@ -175,7 +230,7 @@ const updateAvailability = async (req, res, next) => {
       });
     }
 
-    console.log(`Disponibilité mise à jour: ID ${id}`);
+    console.log(` Disponibilité mise à jour: ID ${id}`);
 
     res.status(200).json({
       success: true,
@@ -189,7 +244,7 @@ const updateAvailability = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la disponibilité:', error.message);
+    console.error(' Erreur lors de la mise à jour de la disponibilité:', error.message);
     next(error);
   }
 };
@@ -198,7 +253,21 @@ const updateAvailability = async (req, res, next) => {
 const deleteAvailability = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const coachId = req.user.id;
+
+    // Récupérer le coach_id à partir du user_id
+    const [coachResult] = await pool.query(
+      'SELECT id FROM coaches WHERE user_id = ?',
+      [req.user.id]
+    );
+
+    if (coachResult.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Profil coach non trouvé pour cet utilisateur',
+      });
+    }
+
+    const coachId = coachResult[0].id;
 
     const availability = await Availability.findById(id);
 
@@ -227,14 +296,14 @@ const deleteAvailability = async (req, res, next) => {
       });
     }
 
-    console.log(`Disponibilité supprimée: ID ${id}`);
+    console.log(` Disponibilité supprimée: ID ${id}`);
 
     res.status(200).json({
       success: true,
       message: 'Disponibilité supprimée',
     });
   } catch (error) {
-    console.error('Erreur lors de la suppression de la disponibilité:', error.message);
+    console.error(' Erreur lors de la suppression de la disponibilité:', error.message);
     next(error);
   }
 };
