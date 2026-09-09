@@ -7,6 +7,13 @@ const {
   validateRegisterData,
   validateLoginData,
 } = require('./validation');
+const {
+  RESERVATION_STATUSES,
+  STATUS_TRANSITIONS,
+  isValidStatus,
+  canTransition,
+} = require('./reservationStatus');
+const { logBusinessEvent } = require('./businessLogger');
 
 module.exports = {
   hashPassword,
@@ -19,4 +26,9 @@ module.exports = {
   isValidRole,
   validateRegisterData,
   validateLoginData,
+  RESERVATION_STATUSES,
+  STATUS_TRANSITIONS,
+  isValidStatus,
+  canTransition,
+  logBusinessEvent,
 };
