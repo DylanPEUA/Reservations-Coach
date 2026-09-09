@@ -1,6 +1,6 @@
 const Reservation = require('../models/Reservation');
-const Availability = require('../models/Availability');
 const pool = require('../database');
+const reservationService = require('../services/reservation.service');
 
 // Créer une réservation (CLIENT)
 const createReservation = async (req, res, next) => {
@@ -16,52 +16,19 @@ const createReservation = async (req, res, next) => {
       });
     }
 
-    // Vérifier que la disponibilité existe
-    const availability = await Availability.findById(availabilityId);
-    if (!availability) {
-      return res.status(404).json({
-        success: false,
-        error: 'Créneau non trouvé',
-      });
-    }
-
-    // Vérifier qu'il n'y a pas de conflit de réservation
-    const hasConflict = await Reservation.checkConflict(availabilityId, scheduledAt);
-    if (hasConflict) {
-      return res.status(409).json({
-        success: false,
-        error: 'Ce créneau est déjà réservé',
-      });
-    }
-
-    // Vérifier qu'il n'y a pas de double réservation du client
-    const hasDuplicate = await Reservation.checkDuplicateReservation(clientId, availabilityId, scheduledAt);
-    if (hasDuplicate) {
-      return res.status(409).json({
-        success: false,
-        error: 'Vous avez déjà une réservation pour ce créneau',
-      });
-    }
-
-    // Créer la réservation
-    const reservationId = await Reservation.create(
+    const reservation = await reservationService.createReservation({
       clientId,
-      availability.coach_id,
       availabilityId,
       scheduledAt,
-      'pending'
-    );
+    });
 
-    console.log(`✅ Réservation créée: ID ${reservationId} pour le client ${clientId}`);
+    console.log(`✅ Réservation créée: ID ${reservation.id} pour le client ${clientId}`);
 
     res.status(201).json({
       success: true,
       message: 'Réservation créée avec succès',
       data: {
-        id: reservationId,
-        availabilityId,
-        scheduledAt,
-        status: 'pending',
+        ...reservation,
       },
     });
   } catch (error) {
@@ -132,48 +99,7 @@ const cancelReservation = async (req, res, next) => {
     const { id } = req.params;
     const clientId = req.user.id;
 
-    const reservation = await Reservation.findById(id);
-
-    if (!reservation) {
-      return res.status(404).json({
-        success: false,
-        error: 'Réservation non trouvée',
-      });
-    }
-
-    // Vérifier que la réservation appartient au client
-    if (reservation.client_id !== clientId) {
-      return res.status(403).json({
-        success: false,
-        error: 'Accès refusé',
-      });
-    }
-
-    // Vérifier que la réservation n'est pas déjà annulée
-    if (reservation.status === 'cancelled') {
-      return res.status(400).json({
-        success: false,
-        error: 'Cette réservation est déjà annulée',
-      });
-    }
-
-    // Vérifier que la réservation n'est pas déjà complétée
-    if (reservation.status === 'completed') {
-      return res.status(400).json({
-        success: false,
-        error: 'Impossible d\'annuler une réservation complétée',
-      });
-    }
-
-    // Annuler la réservation
-    const success = await Reservation.update(id, 'cancelled');
-
-    if (!success) {
-      return res.status(400).json({
-        success: false,
-        error: 'Erreur lors de l\'annulation',
-      });
-    }
+    await reservationService.cancelReservation(id, clientId);
 
     console.log(`✅ Réservation annulée: ID ${id}`);
 
@@ -258,35 +184,19 @@ const updateReservationStatus = async (req, res, next) => {
       });
     }
 
-    // Valider le statut
-    const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        error: `Statut invalide. Valeurs acceptées: ${validStatuses.join(', ')}`,
-      });
-    }
-
-    // Mettre à jour
-    const success = await Reservation.update(id, status, notes || null);
-
-    if (!success) {
-      return res.status(400).json({
-        success: false,
-        error: 'Erreur lors de la mise à jour',
-      });
-    }
+    const updatedReservation = await reservationService.updateReservationStatus({
+      reservationId: id,
+      coachId,
+      status,
+      notes,
+    });
 
     console.log(`✅ Réservation mise à jour: ID ${id}, Status: ${status}`);
 
     res.status(200).json({
       success: true,
       message: 'Réservation mise à jour',
-      data: {
-        id,
-        status,
-        notes: notes || null,
-      },
+      data: updatedReservation,
     });
   } catch (error) {
     console.error('❌ Erreur lors de la mise à jour de la réservation:', error.message);

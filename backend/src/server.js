@@ -4,6 +4,7 @@ require('dotenv').config();
 
 const { errorHandler, logger } = require('./middleware');
 const { authRoutes, availabilityRoutes, reservationRoutes, publicRoutes } = require('./routes');
+const coachReservationRoutes = require('./routes/coachReservation.routes');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -29,6 +30,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/coach/availabilities', availabilityRoutes);
 app.use('/api/client/reservations', reservationRoutes);
+app.use('/api/coach/reservations', coachReservationRoutes);
 app.use('/api/public', publicRoutes);
 
 // 404 handler

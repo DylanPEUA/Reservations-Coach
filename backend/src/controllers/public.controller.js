@@ -1,5 +1,6 @@
 const Availability = require('../models/Availability');
 const pool = require('../database');
+const { getAvailableSlots } = require('../services/availability.service');
 
 // Récupérer les disponibilités d'un coach (PUBLIC)
 const getCoachAvailabilities = async (req, res, next) => {
@@ -80,7 +81,29 @@ const getCoachAvailabilitiesByDay = async (req, res, next) => {
     }
 };
 
+// Récupérer les créneaux disponibles pour une date (PUBLIC)
+const getAvailableSlotsForDate = async (req, res, next) => {
+    try {
+        const { availabilityId } = req.params;
+        const { date } = req.query;
+        const slots = await getAvailableSlots(availabilityId, date);
+
+        res.status(200).json({
+            success: true,
+            message: 'Créneaux disponibles récupérés',
+            data: {
+                availabilityId,
+                date,
+                slots,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getCoachAvailabilities,
     getCoachAvailabilitiesByDay,
+    getAvailableSlotsForDate,
 };
